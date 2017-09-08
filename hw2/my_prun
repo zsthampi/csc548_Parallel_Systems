@@ -11,6 +11,7 @@ PWD=$(pwd)
 
 # Parse $SLURM_NODELIST into an iterable list of node names
 echo $SLURM_NODELIST | tr -d c | tr -d [ | tr -d ] | perl -pe 's/(\d+)-(\d+)/join(",",$1..$2)/eg' | awk 'BEGIN { RS=","} { print "c"$1 }' > $NODEFILE
+nproc=`cat $NODEFILE | wc -l`
 
 # For each item in the nodefile, connect via ssh and run the cmd.
 # The -n parameter is important or ssh will consume the rest 
@@ -19,7 +20,7 @@ echo $SLURM_NODELIST | tr -d c | tr -d [ | tr -d ] | perl -pe 's/(\d+)-(\d+)/joi
 
 rank=0
 for curNode in `cat $NODEFILE`; do
-  ssh -n $curNode "cd $PWD;$CMD $curNode" & pid[$rank]=$!
+  ssh -n $curNode "cd $PWD;$CMD $nproc $rank" & pid[$rank]=$!
   (( rank++ ))
 done
 
