@@ -1,0 +1,30 @@
+/* Author : zsthampi Zubin S Thampi */
+
+===============
+COMPILE AND RUN
+===============
+
+Compile : mpicc -lm -O3 -o p1 p1.c
+Make	: make -f p1.Makefile
+Run     : prun ./p1
+
+===========
+EXPLANATION
+===========
+
+The following legend will be used to explain the graphs.
+(a-c) => multiple processors on the same node
+(d-f) => multiple processors on multiple nodes
+RTT => Round Trip Time (seconds)
+
+Generally, I noticed multiple processors on the same node (a-c) outperform multiple processors on multiple nodes(d-f). This could be because of a shorter interconnection path, resulting in faster communication time. Additionally, I found the RTT on (d-f) has bigger variations. (as observed from Standard Deviation)
+
+However, for some larger message sizes (above 60000 B), I noticed multiple processors on multiple nodes(d-f) intermittently perform at par, or slightly better than multiple processors on the same node (a-c). This makes sense, because multiple nodes (d-f) offer more memory on the device. With increasing message size, (a-c) might run out of memory, and use up some available slower memory. (Which in turn makes it longer to run) 
+
+As expected, RTT(Round Trip Time) increases (almost linearly) with increase in the number of processors. (As the message has to be relayed that many times)
+The RTT also increases linearly with the size of the message. (As it takes that much more time to transfer the message)
+(The plot looks exponential because the values on x-axis are also exponential)
+
+There are some odd points in the graph, where the results seem inconsistent. For example, look at message size 2097152. (a and b) perform better than (d and e), but f outperforms c. (When the number of processors is 8)
+
+On the data, the first observation of RTT seemed very random. However, the rest of the values were consistent. (I used the next 9 observations to compute the Mean and Standard Deviation.) It could be because MPI_Init() is actually a lazy operation. (It sets up the Communicator - MPI_COMM_WORLD, and does other requisite setups only on the first message passing)
