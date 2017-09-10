@@ -9,7 +9,7 @@
 #include "my_mpi.h"
 
 int sockfd, newsockfd, n;
-int portno = 2000;
+int portno = 51718;
 struct sockaddr_in serv_addr, cli_addr;
 socklen_t clilen;
 struct hostent *server;
@@ -43,37 +43,53 @@ void MPI_Comm_rank(int channel,int *rank_holder) {
 }
 
 void MPI_Send(void *message,int size,int type,int dest,int tag,int channel) {
+	printf("Send Begin \n");
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	printf("%s \n",get_host_name(dest));
+	printf("sockfd : %d \n",sockfd);
+	printf("Hostname : %s \n",get_host_name(dest));
 	server = gethostbyname(get_host_name(dest));
+	if (server==NULL) {
+		printf("ERROR : server is null \n");
+	} else {
+		printf("Server initialized \n");
+	}
 	bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
-    serv_addr.sin_port = htons(portno);
-    connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr));
-    n = write(sockfd,message,size);
+	serv_addr.sin_family = AF_INET;
+	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+	serv_addr.sin_port = htons(portno);
+	printf("Connect : %d \n",connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)));
+	n = write(sockfd,message,size);
+	printf("Write : %d \n",n);
+	
+	char buffer[18];
+	bzero(buffer,18);
+	n = read(sockfd,buffer,18);
 
-    char buffer[18];
-    bzero(buffer,18);
-    n = read(sockfd,buffer,18);
-
-    close(sockfd);
+	printf("Read : %d \n",n);
+	close(sockfd);
+	printf("Send End \n");
 }
 
 void MPI_Recv(void *buffer,int size,int type,int source,int tag,int channel,struct MPI_Status *status) {
+	printf("Recv BEGIN \n");
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	printf("sockfd : %d \n",sockfd);
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
-	bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+	printf("Bind : %d \n", bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)));
 	listen(sockfd,5);
 	clilen = sizeof(cli_addr);
 	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	read(newsockfd,buffer,size);
+	printf("newsockfd : %d \n",newsockfd);
+	n = read(newsockfd,buffer,size);
+	printf("Read : %d \n",n);
 	n = write(newsockfd,"I got your message",18);
+	printf("Write : %d \n",n);
 
 	close(newsockfd);
 	close(sockfd);
+	printf("Recv END \n");
 }
 
 char* get_host_name(int rank) {
@@ -97,4 +113,5 @@ char* get_host_name(int rank) {
 
 	return line_buffer;
 }
+
 
