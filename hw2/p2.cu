@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
   int *n_d, *blocks_d;
   double PI25DT = 3.141592653589793238462643;
   double pi;
-  double mypi[THREADS * blocks];
+  // double mypi[THREADS * blocks];
   // Device copy of computed pi value
   double *mypi_d;
   struct timeval startwtime, endwtime, diffwtime;
@@ -144,10 +144,10 @@ int main(int argc, char *argv[]) {
     global_reduce<<< 1,blocks >>>(n_d,blocks_d,mypi_d);
     cudaMemcpy(&pi,mypi_d,sizeof(double),cudaMemcpyDeviceToHost);
 
-    cudaMemcpy(&mypi,mypi_d,sizeof(double) * blocks,cudaMemcpyDeviceToHost);
-    for (int i=0; i<blocks; i++) {
-      printf("%d : %lf \n",i,mypi[i]);
-    }
+    // cudaMemcpy(&mypi,mypi_d,sizeof(double) * blocks,cudaMemcpyDeviceToHost);
+    // for (int i=0; i<blocks; i++) {
+    //   printf("%d : %lf \n",i,mypi[i]);
+    // }
 
     // pi = 0.0;
     // for (int i=0; i<THREADS; i++) {
