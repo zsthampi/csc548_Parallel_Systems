@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include "my_mpi.h"
 
 
@@ -26,7 +25,6 @@ void main(int argc, char* argv[]) {
 		printf("MPI Send \n");
 		MPI_Send(&message,1,MPI_CHAR,1,0,MPI_COMM_WORLD);
 	} else {
-		sleep(3);
 		printf("MPI Recv \n");
 		MPI_Recv(&message,1,MPI_CHAR,0,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
 	}
