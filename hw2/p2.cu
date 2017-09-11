@@ -1,3 +1,4 @@
+// Author : zsthampi Zubin S Thampi
 /* Program to compute Pi using the Leibniz formula */
 
 #include <stdio.h>
@@ -5,12 +6,15 @@
 #include "mytime.h"
 
 #define THREADS 512
-#define MAX_BLOCKS 4
+#define MAX_BLOCKS 16
 
 __global__ void Leibniz(int *n, int *blocks, double *gsum) {
   __shared__ double sum[THREADS];
-  int k;
+  // Variables to use for reduction process 
+  int k, old_k;
   double power;
+
+  // if (threadIdx.x==0) { printf("STARTING : Leibniz \n"); }
   
   sum[threadIdx.x] = 0.0;
   for (k = blockIdx.x * blockDim.x + threadIdx.x; k < *n; k += blockDim.x * *blocks) {
@@ -26,57 +30,78 @@ __global__ void Leibniz(int *n, int *blocks, double *gsum) {
 
   __syncthreads();
 
-  // Block Reduction
-  for (k = blockDim.x/2; k > 0; k >>= 1) {
-    if (threadIdx.x < k) {
-      sum[threadIdx.x] += sum[threadIdx.x + k];
-    }
-    __syncthreads();
-  }
+  // Block Reduction - old logic
 
-  // k = blockDim.x;
-  // while (k>0) {
-  //   if (k%2==0) {
-  //     k = k/2;
-  //   } else {
-  //     k = (k+1)/2;
-  //   }
-  //   if (threadIdx.x < k && (threadIdx.x + k) < blockDim.x) {
+  // for (k = blockDim.x/2; k > 0; k >>= 1) {
+  //   if (threadIdx.x==0) { printf("k value : %d \n",k); }
+  //   if (threadIdx.x < k) {
   //     sum[threadIdx.x] += sum[threadIdx.x + k];
   //   }
   //   __syncthreads();
   // }
+
+  // Block Reduction - new logic
+  // I basically changed the shift operator to divide
+  // And while adding up, I check a boundary condition too
+  // Thus it will counter imbalances caused due to THREADS not being a power of 2
+
+  k = blockDim.x;
+  while (k>1) {
+    old_k = k;
+    if (k%2==0) {
+      k = k/2;
+    } else {
+      k = (k+1)/2;
+    }
+    // if (threadIdx.x==0) { printf("k value : %d \n",k); }
+    if (threadIdx.x < k && (threadIdx.x + k) < old_k) {
+      sum[threadIdx.x] += sum[threadIdx.x + k];
+    }
+    __syncthreads();
+  }
 
   if (threadIdx.x == 0 )
     gsum[blockIdx.x] = sum[threadIdx.x];
 }
 
 __global__ void global_reduce(int *n, int *blocks, double *gsum) {
-  int k;
+  int k, old_k;
   __shared__ double sum[THREADS];
+  // if (threadIdx.x==0) { printf("STARTING : Global Reduce \n"); }
 
   sum[threadIdx.x] = gsum[threadIdx.x];
   __syncthreads();
 
-  for (k = blockDim.x/2; k > 0 ; k >>= 1) {
-    if (threadIdx.x < k) {
-      sum[threadIdx.x] += sum[threadIdx.x + k];
-    }
-    __syncthreads();
-  }
+  // Block Reduction - old logic
 
-  // k = blockDim.x;
-  // while (k>0) {
-  //   if (k%2==0) {
-  //     k = k/2;
-  //   } else {
-  //     k = (k+1)/2;
-  //   }
-  //   if (threadIdx.x < k && (threadIdx.x + k) < blockDim.x) {
+  // for (k = blockDim.x/2; k > 0 ; k >>= 1) {
+  //   if (threadIdx.x==0) { printf("k value : %d \n",k); }
+  //   if (threadIdx.x < k) {
   //     sum[threadIdx.x] += sum[threadIdx.x + k];
   //   }
   //   __syncthreads();
   // }
+
+  // Block Reduction - new logic
+  // I basically changed the shift operator to divide
+  // And while adding up, I check a boundary condition too
+  // Thus it will counter imbalances caused due to THREADS not being a power of 2
+
+  k = blockDim.x;
+  while (k>1) {
+    old_k = k;
+    if (k%2==0) {
+      k = k/2;
+    } else {
+      k = (k+1)/2;
+    }
+    // if (threadIdx.x==0) { printf("k value : %d \n",k); }
+
+    if (threadIdx.x < k && (threadIdx.x + k) < old_k) {
+      sum[threadIdx.x] += sum[threadIdx.x + k];
+    }
+    __syncthreads();
+  }
 
   if (threadIdx.x == 0)
     gsum[threadIdx.x] = sum[threadIdx.x];

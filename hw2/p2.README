@@ -1,0 +1,14 @@
+// Author : zsthampi Zubin S Thampi
+
+COMPILE : make -f p2.Makefile
+RUN : ./p2
+
+EXPLANATION
+===========
+I basically used similar code and convention as in the example, and avoided any comments in those sections. 
+
+The only major change is the way I'm reducing. I added comments in the code in that respective section. 
+  // Block Reduction - new logic
+  // I basically changed the shift operator to divide
+  // And while adding up, I check a boundary condition too
+  // Thus it will counter imbalances caused due to THREADS not being a power of 2
