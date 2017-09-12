@@ -8,6 +8,8 @@ struct MPI_Status {
 	int MPI_TAG;
 };
 
+int generate_random();
+double time_diff(struct timeval x , struct timeval y);
 int MPI_Init(int *argc, char *argv[]);
 void MPI_Finalize();
 void MPI_Barrier();

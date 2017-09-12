@@ -9,19 +9,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "mpi.h"
+#include "my_mpi.h"
 
 /* Main Function */
 void main(int argc, char *argv[]) {
+  setbuf(stdout, NULL);
+
   /* Process Info */
   int numproc,rank; 
  
-  MPI_Status status;
+  struct MPI_Status status;
   /* Variables to capture times */
   double start,end,delta;
   
   /* MPI Initialize */
-  MPI_Init(&argc,&argv);
+  MPI_Init(argc,argv);
   
   /* Get the number of processes - MPI_Comm_size */
   MPI_Comm_size(MPI_COMM_WORLD, &numproc);
