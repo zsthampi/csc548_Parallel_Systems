@@ -67,8 +67,23 @@ int MPI_Init(int *argc, char *argv[]) {
 	}
 	listen(readsockfd,5);
 
+	// Write to file to sync up
+	FILE *fptr;
+	fptr = fopen("sync", "a");
+	fprintf(fptr,"A");
+	fclose(fptr);
+
+	// Read from file to ensure everyone is synced up
+	int n_active = 0;
+	char verify_buffer[nproc];
+	while (n_active<nproc) {
+		fptr = fopen("sync", "r");
+		fscanf(fptr, "%s", verify_buffer);
+		n_active = strlen(verify_buffer);
+	}
+
 	// Sleep to sync up with processes
-	sleep(5);
+	// sleep(5);
 	
 	// Connect to the bind
 	sendsockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -103,6 +118,7 @@ int MPI_Init(int *argc, char *argv[]) {
 void MPI_Finalize() {
 	MPI_Barrier();
 
+	remove("sync");
 	close(sendsockfd);
 	close(newreadsockfd);
 	close(readsockfd);
