@@ -10,7 +10,7 @@ CMD=$1
 NODEFILE=nodefile.txt
 PWD=$(pwd)
 
-# Remove the sync file 
+# Remove the sync file used to sync up processes once they open up a socket
 rm sync
 
 # Parse $SLURM_NODELIST into an iterable list of node names

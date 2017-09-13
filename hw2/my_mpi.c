@@ -27,6 +27,7 @@ int generate_random() {
 	return 29717;
 }
 
+// Function to calculate time difference
 double time_diff(struct timeval x , struct timeval y)
 {
     double x_ms , y_ms , diff;
@@ -43,6 +44,7 @@ int MPI_Init(int *argc, char *argv[]) {
 	nproc = atoi(argv[1]);
 	rank = atoi(argv[2]);
 
+	// Capture start time of the operation
 	gettimeofday(&start , NULL);
 
 	int dest;
@@ -119,6 +121,7 @@ int MPI_Init(int *argc, char *argv[]) {
 } 
 
 void MPI_Finalize() {
+	// Call Barrier to ensure every process is finished
 	MPI_Barrier();
 
 	close(sendsockfd);
@@ -166,6 +169,7 @@ void MPI_Barrier() {
 	return 0;
 }
 
+// Capture the time difference between current time and start (which was initialized in Init function)
 double MPI_Wtime() {
 	gettimeofday(&end , NULL);
 	return time_diff(start,end);
@@ -180,18 +184,23 @@ void MPI_Comm_rank(int channel,int *rank_holder) {
 }
 
 void MPI_Send(void *message,int size,int type,int dest,int tag,int channel) {
+	// Write the main message
 	n = write(sendsockfd,message,size);
 	
+	// Receive a confirmation message
 	char buffer[18];
 	bzero(buffer,18);
 	n = read(sendsockfd,buffer,18);
 }
 
 void MPI_Recv(void *buffer,int size,int type,int source,int tag,int channel,struct MPI_Status *status) {
+	// Read the main message
 	n = read(newreadsockfd,buffer,size);
+	// Write a confirmation message
 	n = write(newreadsockfd,"I got your message",18);
 }
 
+// Return the host name of a rank, as a string
 char* get_host_name(int rank) {
 	FILE *fp;
 	fp = fopen("nodefile.txt", "r");
