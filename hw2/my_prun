@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#Author : zsthampi Zubin S Thampi
 #Usage: ./simple_my_prun [CMD]
 
 [ $# -ne 1 ] && { echo "Usage: $0 [cmd]"; exit 1; }
@@ -8,6 +9,9 @@
 CMD=$1
 NODEFILE=nodefile.txt
 PWD=$(pwd)
+
+# Remove the sync file 
+rm sync
 
 # Parse $SLURM_NODELIST into an iterable list of node names
 echo $SLURM_NODELIST | tr -d c | tr -d [ | tr -d ] | perl -pe 's/(\d+)-(\d+)/join(",",$1..$2)/eg' | awk 'BEGIN { RS=","} { print "c"$1 }' > $NODEFILE

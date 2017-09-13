@@ -1,3 +1,5 @@
+// Author : zsthampi Zubin S Thampi
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,9 +21,10 @@ struct timeval start,end;
 int nproc, rank;
 
 int generate_random() {
+	// I'm just using a constant port number for all the processes. 
+	// Since the probability that a port would be occupied is the same if I generate it randomly
+	// You can update the code here, to use a different port number
 	return 29717;
-	// srand(time(NULL));
-	// return (rand()%10000 + 20000);
 }
 
 double time_diff(struct timeval x , struct timeval y)
@@ -118,7 +121,6 @@ int MPI_Init(int *argc, char *argv[]) {
 void MPI_Finalize() {
 	MPI_Barrier();
 
-	remove("sync");
 	close(sendsockfd);
 	close(newreadsockfd);
 	close(readsockfd);
@@ -203,7 +205,7 @@ char* get_host_name(int rank) {
 
 	// Remove the newline at the end
 	if (line[strlen(line)-1]=='\n')
-	line[strlen(line)-1] = 0;
+	line[strlen(line)-1] = '\0';
 
 	char * line_buffer;
 	line_buffer =(char*)malloc(sizeof(char) * strlen(line));

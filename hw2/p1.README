@@ -1,0 +1,45 @@
+// Author : zsthampi Zubin S Thampi
+
+Compile : make -f p1.Makefile
+Reserve nodes : srun -N 4 -n 4 -p opteron --pty /bin/bash
+Run : ./my_prun ./my_rtt
+
+I'm just using a constant port number for all the processes. (PORT 29717)
+Since the probability that a port would be occupied is the same if I generate it randomly
+You can update the code in function generate_random, to use a different port number
+
+If the port is occupied for any reason, run the following commands to clear it on each node. 
+netstat -an | grep 29717
+fuser -k 29717/tcp
+
+RESULTS
+=======
+
+32 0.000595777778 0.000028808864
+64 0.000602111111 0.000036939724
+128 0.000540333333 0.000013482499
+256 0.000583000000 0.000016686655
+512 0.000606222222 0.000016109195
+1024 0.000653888889 0.000022188307
+2048 0.000756111111 0.000025418473
+4096 0.000746555556 0.000019477115
+8192 0.000267444444 0.000107739512
+16384 0.000307000000 0.000068663430
+32768 0.000464888889 0.000159524602
+65536 0.000725888889 0.000404684910
+131072 0.006626222222 0.012625179935
+262144 0.015840111111 0.027275691430
+524288 0.030770777778 0.038998131131
+1048576 0.041102000000 0.041114934256
+2097152 0.061012222222 0.038036116982
+
+Above is the result on 4 GPU nodes on ARC. 
+Similar to HW1 results, I noticed the Round Trip Time increases almost linearily with the message size. 
+
+However, I noticed the RTT are significantly higher in my implementation. 
+In HW1, the RRT for 8 nodes was only 0.007880873150, whereas in my implementation, the RTT for 4 nodes alone came out to 0.061012222222 (message size = 2097152 Bytes)
+This should be because the MPI code is optimized to utilize the best network, and message tranfer settings. 
+
+I also noticed a lot of inconsistent data within a small bracket of message size. 
+For instance, in the above output, there is a dip in RTT between message sizes 4096 and 32768. 
+This could be because there are optimizations in the web socket code, for medium sized message sizes.

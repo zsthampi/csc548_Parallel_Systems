@@ -1,3 +1,5 @@
+// Author : zsthampi Zubin S Thampi
+
 // Define MPI_COMM_WORLD, MPI_ANY_TAG, MPI_CHAR
 #define MPI_COMM_WORLD 0
 #define MPI_ANY_TAG 0
