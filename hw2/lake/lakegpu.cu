@@ -64,32 +64,99 @@ inline void __cudaCheckError( const char *file, const int line )
   return;
 }
 
+// Function to evolve data 
+__global__ void evolve(double *un, double *uc, double *uo, double *pebbles, int n, double h, double dt, double t)
+{
+  int idx = (blockDim.y * threadDim.y + threadIdx.y) * (blockDim.x * threadDim.x) + (blockIdx.x * threadDim.x + threadIdx.x);
+  int i = idx / n;
+  int j = idx % n;
+
+  if( i <= 1 || i >= n-2 || j <= 1 || j >= n - 2 )
+  {
+    un[idx] = 0.;
+  }
+  else
+  {
+    // 5 point stencil
+    // un[idx] = 2*uc[idx] - uo[idx] + VSQR *(dt * dt) *((uc[idx-1] + uc[idx+1] + 
+    //             uc[idx + n] + uc[idx - n] - 4 * uc[idx])/(h * h) + f(pebbles[idx],t));
+
+    // 13 point stencil
+    un[idx] = 2*uc[idx] - uo[idx] + VSQR *(dt * dt) *((uc[idx-1] + uc[idx+1] + uc[idx + n] + uc[idx - n] + 
+              0.25*(uc[idx-n-1] + uc[idx-n+1] + uc[idx+n-1] + uc[idx+n+1]) + 
+              0.125*(uc[idx-2] + uc[idx+2] + uc[idx+2*n] + uc[idx-2*n]) - 6 * uc[idx])/(h * h) + (-expf(-TSCALE * t) * pebbles[idx]));
+  }
+  __syncthreads();
+}
+
 void run_gpu(double *u, double *u0, double *u1, double *pebbles, int n, double h, double end_time, int nthreads)
 {
 	cudaEvent_t kstart, kstop;
 	float ktime;
+  double t, dt;
         
 	/* HW2: Define your local variables here */
 
-        /* Set up device timers */  
+  int nblocks = n/nthreads;
+  double *u_d;
+  double *u0_d;
+  double *u1_d;
+  double *pebbles_d;
+
+  dim3 block(nblocks,nblocks,1);
+  dim3 thread(nthreads,nthreads,1);
+
+  /* Set up device timers */  
 	CUDA_CALL(cudaSetDevice(0));
 	CUDA_CALL(cudaEventCreate(&kstart));
 	CUDA_CALL(cudaEventCreate(&kstop));
 
 	/* HW2: Add CUDA kernel call preperation code here */
 
+  cudaMalloc((void **) &u_d, sizeof(double) * n * n); 
+  cudaMalloc((void **) &u0_d, sizeof(double) * n * n); 
+  cudaMalloc((void **) &u1_d, sizeof(double) * n * n);
+  cudaMalloc((void **) &pebbles_d, sizeof(double) * n * n); 
+
+  // Copy all three pointers from Host to Device 
+  cudaMemcpy(u0_d, u0, sizeof(double) * n * n, cudaMemcpyHostToDevice);
+  cudaMemcpy(u1_d, u1, sizeof(double) * n * n, cudaMemcpyHostToDevice);
+  cudaMemcpy(pebbles_d, pebbles, sizeof(double) * n * n, cudaMemcpyHostToDevice);
+  
+
 	/* Start GPU computation timer */
 	CUDA_CALL(cudaEventRecord(kstart, 0));
 
 	/* HW2: Add main lake simulation loop here */
+
+  // do while 
+  // Check condition
+  // evolve<<< block, thread >>>()
+  // Copy within device to respective pointers
+  t = 0.;
+  dt = h / 2.;
+
+  while(1)
+  {
+    evolve<<< block,thread >>>(u_d, u1_d, u0_d, pebbles_d, n, h, dt, t);
+
+    // Copy updated pointers from Device to Device
+    cudaMemcpy(u0_d, u1_d, sizeof(double) * n * n, cudaMemcpyDeviceToDevice);
+    cudaMemcpy(u1_d, u_d, sizeof(double) * n * n, cudaMemcpyDeviceToDevice);
+
+    if(!tpdt(&t,dt,end_time)) break;
+  }
 	
-        /* Stop GPU computation timer */
+  /* Stop GPU computation timer */
 	CUDA_CALL(cudaEventRecord(kstop, 0));
 	CUDA_CALL(cudaEventSynchronize(kstop));
 	CUDA_CALL(cudaEventElapsedTime(&ktime, kstart, kstop));
 	printf("GPU computation: %f msec\n", ktime);
 
 	/* HW2: Add post CUDA kernel call processing and cleanup here */
+
+  // Copy from Device to Host
+  cudaMemcpy(u, u_d, sizeof(double) * n * n, cudaMemcpyDeviceToHost);
 
 	/* timer cleanup */
 	CUDA_CALL(cudaEventDestroy(kstart));
