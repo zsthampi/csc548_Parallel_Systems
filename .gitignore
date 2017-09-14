@@ -5,3 +5,6 @@ hw2/pi
 hw2/p2
 hw2/my_rtt
 hw2/sync
+hw2/lake/lake
+hw2/lake/*.dat
+hw2/lake/*.png
