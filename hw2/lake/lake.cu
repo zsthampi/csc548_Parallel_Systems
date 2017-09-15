@@ -27,7 +27,7 @@ extern void run_gpu(double *u, double *u0, double *u1, double *pebbles, int n, d
 
 int main(int argc, char *argv[])
 {
-
+  setbuf(stdout, NULL);
   if(argc != 5)
   {
     printf("Usage: %s npoints npebs time_finish nthreads \n",argv[0]);
