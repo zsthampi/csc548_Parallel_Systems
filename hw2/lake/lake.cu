@@ -81,7 +81,15 @@ int main(int argc, char *argv[])
   printf("GPU took %f seconds\n", elapsed_gpu);
 
 
-  print_heatmap("lake_f.dat", u_cpu, npoints, h);
+  // DEBUG CODE 
+  
+  // printf("\n OUTPUT \n ========= \n");
+  // for (int i=0; i<narea; i++) {
+  //   printf("%2.4lf : %2.4lf \n",u_cpu[i],u_gpu[i]);
+  // }
+
+  // print_heatmap("lake_f.dat", u_cpu, npoints, h);
+  print_heatmap("lake_f.dat", u_gpu, npoints, h);
 
   free(u_i0);
   free(u_i1);
