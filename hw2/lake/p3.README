@@ -1,0 +1,4 @@
+README
+======
+
+1. CUDA and MPI code have to be in separate files, and compiled separately
