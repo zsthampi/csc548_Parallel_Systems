@@ -1,4 +1,181 @@
+// zsthampi Zubin S Thampi
+// sgarg7 Shaurya Garg
+// kjadhav Karan Jadhav
+
 README
 ======
 
-1. CUDA and MPI code have to be in separate files, and compiled separately
+Compile : 
+		V2 : make -f p3.Makefile lake
+		V3 : make -f p3.Makefile lake-mpi
+
+Run : 
+		V2 : ./lake {npoints} {npebbles} {end_time} {nthreads} 
+		Ex : ./lake 128 5 1.0 8
+
+		V3 : ./lake {npoints} {npebbles} {end_time} {nthreads} 
+		Ex : prun ./lake 128 5 1.0 8
+
+GNUPLOT :
+		The submission did not include the heatmap.gnu file. 
+		So we kept the naming conventions in the problem statement. 
+
+		V2 : lake_i.dat , lake_f.dat
+		V3 : lake_i.dat , lake_f.dat, lake_f_0.dat, lake_f_1.dat, lake_f_2.dat, lake_f_3.dat 
+
+
+DISCUSSION
+==========
+
+V1:
+---
+There are 4 png files:
+1. lake_i : initial state
+2. lake_f : final state 13 pt
+3. lake_f_red : final state 13 pt w/ end time reduced to 0.85
+4. lake_f_five : final state 5 pt
+
+If we compare the final 13pt and 5pt images, we see that the former evolves faster than the latter.
+This is advantageous since in the same end_time, we see more progress in the lake simulation.
+In addition to this, we can also see that the 13pt stencil leads to a smoother and more accurate simulation.
+The 5pt image looks more pixelated and the transition of points isn't as smooth as the 13pt one.
+
+Timings:
+CPU(13) took 0.304140 seconds
+CPU(13_red) took 0.257302 seconds
+CPU(5) took 0.274561 seconds
+
+In terms of time, we can see that the 13pt stencil takes more time than the 5pt one.
+However, as seen earlier, the 13pt stencil evolves faster and gives a more accurate end result.
+Because of the added 8 points used for computation, the time for 13pt stencil will go up by n^2 times some constant(time for accessing the additional points), but the time bounds for both stencils will still be in the same Theta class - n^2, where n is the number of points.
+
+Additionally, we ran the 13pt stencil with over a range of reduced end time.
+We observed that for an end time between 0.85 to 0.9 of the actual end time, the 13pt stencil evolved about the same as the 5pt stencil, with CPU times being very close for the two.
+------------------------
+
+
+
+How well does your algorithm scale on the GPU? Do you find cases (grid size, thread number, etc.) where the GPU implementation does not scale well? Why?
+-----------------------------------------------------------------------------------------------------------------
+We noticed the computation time does not changed much with increase in the number of pebble sizes. 
+We focused our experiments on altering grid and thread sizes.
+
+The observed timings for our observations are as below. 
+(GPU computation (microseconds) / GPU time (seconds))
+
+
+          Thread-Size =>	8								32								64
+
+Grid-Size
+   !!
+
+   16				880.163452/1.180958				881.064819/1.176079						
+   128				1248.517944/1.540469			1238.565796/1.530613			1240.074219/1.533596
+   512				6541.957031/6.835166			6740.939941/7.036444			6349.570801/6.646042
+   1024				22755.335938/23.926615			25193.748047/25.491482			22290.875000/22.669412
+
+
+There are minor variations in the GPU computation time (in microseconds) with increase in thread size. 
+
+There is a slightly bigger variation in GPU computation time with increase in grid size. 
+This is because the threads become serialized, with increase in problem size. 
+Still, the variation is minute, and does not affect the scalability of the algorithm.
+
+
+However, we saw an exponential increase in the GPU overall time, with increase in grid sizes. Grid size of 1024 almost takes more than 20 seconds to complete! 
+
+This is because it takes longer to communicate date within MPI processes, and to tranfer data between Device and Host. To optimize it further, we need to cut down on the number of array elements to be copied in the algorithm. 
+
+The algorithm does not scale well beyond a grid size of 512. 
+
+
+
+
+
+In the serial code, compare your CPU and GPU runtimes for different grid sizes. When is the GPU better, and when is it worse?
+-----------------------------------------------------------------------------------------------------------------
+In the graph, CPU and GPU times seem quite comparable until a grid dimension of 128.
+In actuality, the time difference was huge as can be seen in the results below.
+From dimensions 16 until 64, the GPU time was bigger by an order of magnitude varying from 3 to 1, in comparison to CPU time.
+This can be attributed to the overhead of copying memory between the host and device.
+
+At dimension 128, is when runtimes of both have the same order of magnitude.
+Past this, CPU time shoots up exponentially going from 0.3 to 198 seconds, for grid dimensions varying from 128 to 1024.
+In contrast, GPU time barely changes, going from 0.8 to 2.3 seconds, for the same range of grid dimensions.
+This is where we can see the parallelism really kick in. The overhead of copying memory between the host and device is neglegible considering the huge advantage we get from the massively parallel computation we can achieve.
+
+16
+CPU took 0.001035 seconds
+GPU computation: 1.267424 msec
+GPU took 0.798670 seconds
+==================
+32
+CPU took 0.004008 seconds
+GPU computation: 1.800896 msec
+GPU took 0.852574 seconds
+==================
+64
+CPU took 0.043268 seconds
+GPU computation: 3.504224 msec
+GPU took 0.769418 seconds
+==================
+128
+CPU took 0.304927 seconds
+GPU computation: 8.654656 msec
+GPU took 0.806805 seconds
+==================
+256
+CPU took 2.568299 seconds
+GPU computation: 48.795586 msec
+GPU took 0.800366 seconds
+==================
+512
+CPU took 21.682548 seconds
+GPU computation: 324.280884 msec
+GPU took 1.138780 seconds
+==================
+1024
+CPU took 198.111176 seconds
+GPU computation: 2296.493896 msec
+GPU took 3.124636 seconds
+--------------------------
+
+
+
+Integrating CUDA and MPI involves more sophisticated code. What problems did you encounter? How did you fix them?
+-----------------------------------------------------------------------------------------------------------------
+
+1. CUDA and MPI have different code, and have to be compiled separately. - Fortunately for us, there was a sample Makefile provided, which saved us quite some time trying to find out how to compile the code! 
+
+2. Splitting up the problem - We discussed and found it would be easier if the whole problem were split into 4 rows. (Instead of 4 squares.) The advantage being that each process would have to communicate only to 2 other processes (up and down), and it makes fetching of data really easy (since the values will be at continuous locations in the array.)
+
+Splitting into 4 squares adds the additional complexity, that each process has to communicate boundary values to 3 other processes. 
+
+3. Communicating Boundary Values - We did not want to send the whole u array between processes. It would be very inefficient (being an order of n squared.) Besides, since we were computing the values on the Device, we had to do it in 3 steps 
+	- Copy the u value from Device to Host 
+	- MPI Communicate to other processes 
+	- Copy the received values from Host to Device 
+
+It would not scale! Especially if we take grid sizes of the order of thousands.
+
+We decided to split our boundary values into 3 types - HORIZONTAL, VERTICAL, and DIAGAONAL. We tried to keep the naming convention pretty intuitive to the logic. Each process communicates; a DIAGONAL element to the process diagonally opposite to it; a HORIZONTAL element to the process up/down; a VERTICAL element to the process to the left/right.
+
+size(DIAGONAL) = 1
+size(VERTICAL) = size(HORIZONTAL) = 2 * side of square at each process
+
+This brought down the number of processes to be communicated down to an order of n. 
+
+4. Storing Boundary Values - Initially, we were confused how to store the boundary values from other processes. We decided to add some buffer in each process array, to help Send/Receive boundary values from other processes. 
+So to be consistent, and make our programming efforts easier, we added the buffer to all sides of the 2-D array in the process. (4 rows and 4 columns each). Only 2 rows and 2 columns out of these would be used per process. 
+
+Although this made our code portable across different ranks of the processor, it came at the expense of some memory wastage. Since this was order of n (approximately  4*n), we decide we could live with it! 
+
+5. Pebble values - The serial program stored the pebble values in a 2-D array, and we are computing it at rank0 in our program. We them MPI Communicate it to all other processes, and they extract their corresponding 2-D array from it. 
+
+We noticed, that since we have a small number of pebbles, it would be more efficient to communicate the locations of pebble locations between the processes, instead of communicating the whole 2-D array. 
+
+ex : Pebbles - [(1,0), (4,5), (3,4)] instead of a 2-D array of 6x6. 
+
+Given more time, we could implement this optimization on our code.
+
+6. Reduce (Custom MPI Reduce vs Send/Receive) - Finally, to reduce all the data from processes to a main array, we had two options - either to write a custom MPI Reduce function, or to Send/Receive the arrays from each process, and combine them at rank0 manually. We discussed the approaches, and concluded the custom MPI_Reduce function might not provide any advantages in terms of computation speed. We finally implemented it using Non-Blocking communication methods, and integrating them at rank 0. The order of our algorithm is linear (in the number of elements at each process.) A custom MPI_Reduce would have had the same order of time complexity again! 

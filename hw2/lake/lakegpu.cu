@@ -1,3 +1,7 @@
+// zsthampi Zubin S Thampi
+// sgarg7 Shaurya Garg
+// kjadhav Karan Jadhav
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <cuda_runtime.h>
