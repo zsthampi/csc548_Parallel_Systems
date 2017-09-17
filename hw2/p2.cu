@@ -127,12 +127,13 @@ int main(int argc, char *argv[]) {
   while (1) {
     printf("Enter the number of intervals: (0 quits) ");fflush(stdout);
     scanf("%d",&n);
-    printf("Enter the number of blocks: (<=%d) ", MAX_BLOCKS);fflush(stdout);
-    scanf("%d",&blocks);
-
+    
     gettimeofday(&startwtime, NULL);
     if (n == 0)
       break;
+
+    printf("Enter the number of blocks: (<=%d) ", MAX_BLOCKS);fflush(stdout);
+    scanf("%d",&blocks);
 
     // Copy from Host to Device
     cudaMemcpy(n_d,&n,sizeof(int),cudaMemcpyHostToDevice);
