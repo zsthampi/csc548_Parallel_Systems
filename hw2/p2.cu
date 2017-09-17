@@ -6,7 +6,7 @@
 #include "mytime.h"
 
 #define THREADS 512
-#define MAX_BLOCKS 16
+#define MAX_BLOCKS 64
 
 __global__ void Leibniz(int *n, int *blocks, double *gsum) {
   __shared__ double sum[THREADS];
@@ -127,6 +127,8 @@ int main(int argc, char *argv[]) {
   while (1) {
     printf("Enter the number of intervals: (0 quits) ");fflush(stdout);
     scanf("%d",&n);
+    printf("Enter the number of blocks: (<=%d) ", MAX_BLOCKS);fflush(stdout);
+    scanf("%d",&blocks);
 
     gettimeofday(&startwtime, NULL);
     if (n == 0)
