@@ -28,6 +28,8 @@ void print_heatmap_original(const char *filename, double *u, int n, double h);
 void print_heatmap(const char *filename, double *u, int n, double h);
 void init_pebbles(double *p, int pn, int n);
 void divide(double *pebbles_proc, double *pebbles, int npoints_proc, int start_i,int start_j);
+void run_cpu(double *u, double *u0, double *u1, double *pebbles, int n, double h, double end_time);
+void evolve_cpu(double *un, double *uc, double *uo, double *pebbles, int n, double h, double dt, double t);
 
 
 extern void run_gpu(double *u, double *u0, double *u1, double *pebbles, int n, double h, double end_time, int nthreads, int rank, int start_i, int start_j);
@@ -168,6 +170,24 @@ int main(int argc, char *argv[])
 		char filenames[10];
 		sprintf(filenames, "lake_i.dat", rank);
 		print_heatmap_original(filenames,u_initial, npoints, h);
+
+		// CODE TO PRINT CPU VERSION
+		double *u_j0 = (double*)malloc(sizeof(double) * npoints*npoints);
+		double *u_j1 = (double*)malloc(sizeof(double) * npoints*npoints);
+		init_original(u_j0,pebs,npoints);
+		init_original(u_j1,pebs,npoints);
+
+		struct timeval cpu_start, cpu_end;
+		double elapsed_cpu;
+		gettimeofday(&cpu_start, NULL);
+		run_cpu(u_initial, u_j0, u_j1, pebs, npoints, h, end_time);
+		gettimeofday(&cpu_end, NULL);
+
+		elapsed_cpu = ((cpu_end.tv_sec + cpu_end.tv_usec * 1e-6)-(cpu_start.tv_sec + cpu_start.tv_usec * 1e-6));
+		printf("CPU took %f seconds\n", elapsed_cpu);
+
+		print_heatmap_original("lake_f.dat", u_initial, npoints, h);
+
 		free(u_initial);
 	}
 
@@ -188,7 +208,7 @@ int main(int argc, char *argv[])
 		MPI_Waitall(3,requests,request_status);
 
 		stitch(u,u_proc,u_proc1,u_proc2,u_proc3,npoints_proc);
-		print_heatmap_original("lake_f.dat",u, npoints, h);
+		print_heatmap_original("lake_f_gpu.dat",u, npoints, h);
 
 		free(u_proc1);
 		free(u_proc2);
@@ -357,3 +377,61 @@ void print_heatmap(const char *filename, double *u, int n, double h)
 
 	fclose(fp);
 } 
+
+
+void run_cpu(double *u, double *u0, double *u1, double *pebbles, int n, double h, double end_time)
+{
+  double *un, *uc, *uo;
+  double t, dt;
+
+  un = (double*)malloc(sizeof(double) * n * n);
+  uc = (double*)malloc(sizeof(double) * n * n);
+  uo = (double*)malloc(sizeof(double) * n * n);
+
+  memcpy(uo, u0, sizeof(double) * n * n);
+  memcpy(uc, u1, sizeof(double) * n * n);
+
+  t = 0.;
+  dt = h / 2.;
+
+  while(1)
+  {
+    evolve_cpu(un, uc, uo, pebbles, n, h, dt, t);
+
+    memcpy(uo, uc, sizeof(double) * n * n);
+    memcpy(uc, un, sizeof(double) * n * n);
+
+    if(!tpdt(&t,dt,end_time)) break;
+  }
+  
+  memcpy(u, un, sizeof(double) * n * n);
+}
+
+void evolve_cpu(double *un, double *uc, double *uo, double *pebbles, int n, double h, double dt, double t)
+{
+  int i, j, idx;
+
+  for( i = 0; i < n; i++)
+  {
+    for( j = 0; j < n; j++)
+    {
+      idx = j + i * n;
+
+      if( i <= 1 || i >= n-2 || j <= 1 || j >= n - 2 )
+      {
+        un[idx] = 0.;
+      }
+      else
+      {
+        // 5 point stencil
+        // un[idx] = 2*uc[idx] - uo[idx] + VSQR *(dt * dt) *((uc[idx-1] + uc[idx+1] + 
+        //             uc[idx + n] + uc[idx - n] - 4 * uc[idx])/(h * h) + f(pebbles[idx],t));
+
+        // 13 point stencil
+        un[idx] = 2*uc[idx] - uo[idx] + VSQR *(dt * dt) *((uc[idx-1] + uc[idx+1] + uc[idx + n] + uc[idx - n] + 
+                  0.25*(uc[idx-n-1] + uc[idx-n+1] + uc[idx+n-1] + uc[idx+n+1]) + 
+                  0.125*(uc[idx-2] + uc[idx+2] + uc[idx+2*n] + uc[idx-2*n]) - 6 * uc[idx])/(h * h) + f(pebbles[idx],t));
+      }
+    }
+  }
+}

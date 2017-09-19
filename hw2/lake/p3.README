@@ -6,8 +6,8 @@ README
 ======
 
 Compile : 
-		V2 : make -f p3.Makefile lake
-		V3 : make -f p3.Makefile lake-mpi
+		V2 : make -f p3.Makefile clean lake
+		V3 : make -f p3.Makefile clean lake-mpi
 
 Run : 
 		V2 : ./lake {npoints} {npebbles} {end_time} {nthreads} 
