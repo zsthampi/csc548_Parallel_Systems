@@ -9,7 +9,7 @@ OBJS = lu.o init_comm.o read_input.o bcast_inputs.o proc_grid.o neighbors.o \
        nodedim.o subdomain.o setcoeff.o setbv.o exact.o setiv.o \
        erhs.o ssor.o exchange_1.o exchange_3.o exchange_4.o exchange_5.o \
        exchange_6.o rhs.o l2norm.o jacld.o blts$(VEC).o jacu.o buts$(VEC).o \
-       error.o pintgr.o verify.o ${COMMON}/print_results.o ${COMMON}/timers.o
+       error.o pintgr.o verify.o ${COMMON}/print_results.o ${COMMON}/timers.o pmpi.o
 
 include ../sys/make.common
 
@@ -67,6 +67,8 @@ setcoeff.o:	setcoeff.f applu.incl npbparams.h
 ssor.o:		ssor.f applu.incl npbparams.h mpinpb.h
 subdomain.o:	subdomain.f applu.incl npbparams.h mpinpb.h
 verify.o:	verify.f applu.incl npbparams.h
+pmpi.o:		pmpi.c
+			${CCOMPILE} pmpi.c
 
 clean:
 	- /bin/rm -f npbparams.h
