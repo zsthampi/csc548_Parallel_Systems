@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void main(int argc, char *argv[]) {
+void pmpi(int argc, char *argv[]) {
 	printf("Success!");
 }
