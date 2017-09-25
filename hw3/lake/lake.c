@@ -38,6 +38,8 @@
 /* Probably not necessary but doesn't hurt */
 #define _USE_MATH_DEFINES
 
+void update_sim_values(double *un, double *uo, double *uc, double *pebbles, int n, double h, double t, double dt);
+
 /* Number of OpenMP threads */
 int nthreads;
 
@@ -186,8 +188,7 @@ void run_sim(double *u, double *u0, double *u1, double *pebbles, int n, double h
   double *un, *uc, *uo;
   /* time vars */
   double t, dt;
-  int i, j, idx;
-
+  
   /* allocate the calculation arrays */
   un = (double*)malloc(sizeof(double) * n * n);
   uc = (double*)malloc(sizeof(double) * n * n);
@@ -210,44 +211,65 @@ void run_sim(double *u, double *u0, double *u1, double *pebbles, int n, double h
    * be aware the possibility exists for madness and mayhem */
   dt = h / 2.;
 
+  // Keep count of the iteration
+  int count = 0;
+  int mod = 0;
   /* loop until time >= end_time */
   while(1)
   {
-
-    /* run a central finite differencing scheme to solve
-     * the wave equation in 2D */
-    for( i = 0; i < n; i++)
-    {
-      for( j = 0; j < n; j++)
-      {
-        idx = j + i * n;
-        
-        /* impose the u|_s = 0 boundary conditions */
-        if( i == 0 || i == n - 1 || j == 0 || j == n - 1)
-        {
-          un[idx] = 0.;
-        }
-
-        /* otherwise do the FD scheme */
-        else
-        {
-            un[idx] = 2*uc[idx] - uo[idx] + VSQR *(dt * dt) *((uc[idx-1] + uc[idx+1] +
-                      uc[idx+n] + uc[idx-n] + 0.25 * (uc[idx-n-1] + uc[idx+n-1]+ uc[idx-n+1] + 
-					  uc[idx+n+1]) - 5 * uc[idx])/(h * h) + f(pebbles[idx],t));
-
-        }
-      }
+    mod = count % 3;
+    if (mod==0) {
+      update_sim_values(un, uo, uc, pebbles, n, h, t, dt);
+    } else if (mod==1) {
+      update_sim_values(uo, uc, un, pebbles, n, h, t, dt);
+    } else {
+      update_sim_values(uc, un, uo, pebbles, n, h, t, dt);
     }
-
     /* update the calculation arrays for the next time step */    
-    memcpy(uo, uc, sizeof(double) * n * n);
-    memcpy(uc, un, sizeof(double) * n * n);
+    // memcpy(uo, uc, sizeof(double) * n * n);
+    // memcpy(uc, un, sizeof(double) * n * n);
 
     /* have we reached the end? */
     if(!tpdt(&t,dt,end_time)) break;
+    count++;
   }
   /* cpy the last updated to the output array */
-  memcpy(u, un, sizeof(double) * n * n);
+  if (mod==0) {
+    memcpy(u, un, sizeof(double) * n * n);
+  } else if (mod==1) {
+    memcpy(u, uo, sizeof(double) * n * n);
+  } else {
+    memcpy(u, uc, sizeof(double) * n * n);
+  }
+}
+
+void update_sim_values(double *un, double *uo, double *uc, double *pebbles, int n, double h, double t, double dt) {
+  int i, j, idx;
+
+  /* run a central finite differencing scheme to solve
+   * the wave equation in 2D */
+  for( i = 0; i < n; i++)
+  {
+    for( j = 0; j < n; j++)
+    {
+      idx = j + i * n;
+      
+      /* impose the u|_s = 0 boundary conditions */
+      if( i == 0 || i == n - 1 || j == 0 || j == n - 1)
+      {
+        un[idx] = 0.;
+      }
+
+      /* otherwise do the FD scheme */
+      else
+      {
+          un[idx] = 2*uc[idx] - uo[idx] + VSQR *(dt * dt) *((uc[idx-1] + uc[idx+1] +
+                    uc[idx+n] + uc[idx-n] + 0.25 * (uc[idx-n-1] + uc[idx+n-1]+ uc[idx-n+1] + 
+          uc[idx+n+1]) - 5 * uc[idx])/(h * h) + f(pebbles[idx],t));
+
+      }
+    }
+  }
 }
 
 /*****************************
@@ -414,3 +436,4 @@ void print_heatmap(char *filename, double *u, int n, double h)
   
   fclose(fp);
 } 
+
