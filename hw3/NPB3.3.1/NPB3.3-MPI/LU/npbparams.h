@@ -1,4 +1,4 @@
-c NPROCS = 4 CLASS = A
+c NPROCS = 64 CLASS = A
 c  
 c  
 c  This file is generated automatically by the setparams utility.
@@ -8,7 +8,7 @@ c
 
 c number of nodes for which this version is compiled
         integer nnodes_compiled, nnodes_xdim
-        parameter (nnodes_compiled=4, nnodes_xdim=2)
+        parameter (nnodes_compiled=64, nnodes_xdim=8)
 
 c full problem size
         integer isiz01, isiz02, isiz03
@@ -16,7 +16,7 @@ c full problem size
 
 c sub-domain array size
         integer isiz1, isiz2, isiz3
-        parameter (isiz1=32, isiz2=32, isiz3=isiz03)
+        parameter (isiz1=8, isiz2=8, isiz3=isiz03)
 
 c number of iterations and how often to print the norm
         integer itmax_default, inorm_default
