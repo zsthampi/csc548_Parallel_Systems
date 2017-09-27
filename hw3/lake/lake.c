@@ -251,7 +251,7 @@ void update_sim_values(double *un, double *uo, double *uc, double *pebbles, int 
 #pragma omp parallel for firstprivate(j,idx) num_threads(nthreads) 
   for( i = 0; i < n; i++)
   {
-#pragma omp parallel for firstprivate(idx) num_threads(nthreads)
+// #pragma omp parallel for firstprivate(idx) num_threads(nthreads)
     for( j = 0; j < n; j++)
     {
       idx = j + i * n;
@@ -356,6 +356,7 @@ void init(double *u, double *pebbles, int n)
 {
   int i, j, idx;
 
+  #pragma omp parallel for firstprivate(j,idx)
   for(i = 0; i < n ; i++)
   {
     for(j = 0; j < n ; j++)
@@ -438,5 +439,6 @@ void print_heatmap(char *filename, double *u, int n, double h)
   
   fclose(fp);
 } 
+
 
 
