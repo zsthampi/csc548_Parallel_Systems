@@ -1,5 +1,7 @@
 // zsthampi - Zubin Thampi
 
+I clubbed the discussion and results based on the versions below. 
+
 V0
 ==
 running ./lake with (1024 x 1024) grid, until 2.000000, with 1 threads
@@ -14,12 +16,20 @@ Initialization took 0.029254 seconds
 Simulation took 213.579826 seconds
 Init+Simulation took 213.609080 seconds
 
+The optimization reduced the execution time of the program significantly! 
+
+How/why does your optimization for removing memory copies work?
+---------------------------------------------------------------
+Instead of copying the contents of u arrays, I changed the code to alternate between the u arrays to update, based on the iteration number. We have three arrays - u, u0 and u1. In iterations 0,3,6...., it will update u based on u0 and u1. In iterations 1,4,7...., it will update u0 based on u and u1, and so on. The final result can be fetched from the respective variable, based on the iteration number we are on. For instance, if the final iteration is 1023, the result will be in array u (Since 1023 % 3 = 0)
+
 V1 - OUTER
 ==========
 running ./lake with (1024 x 1024) grid, until 2.000000, with 16 threads
 Initialization took 0.029236 seconds
 Simulation took 15.006505 seconds
 Init+Simulation took 15.035741 seconds
+
+Parallelizing the outer loop gave the best results. 
 
 V1 - INNER
 ==========
@@ -28,12 +38,26 @@ Initialization took 0.035560 seconds
 Simulation took 53.607651 seconds
 Init+Simulation took 53.643211 seconds
 
+Parallalizing the inner loop had better results, but not comparable to the outer loop.
+
 V1 - BOTH
 =========
 running ./lake with (1024 x 1024) grid, until 2.000000, with 16 threads
 Initialization took 0.029840 seconds
 Simulation took 70.998663 seconds
 Init+Simulation took 71.028503 seconds
+
+Parallelizing both had worse performance than the two individually. 
+
+Does which loop you parallelized matter? Why or why not?
+--------------------------------------------------------
+Yes, it does. In our case, parallelizing the outer loop works better. In the inner loop, the array that is being worked on (by different threads), is contiguous in memory. Thus, it is possible that the threads share elements which are in the same cache line. In this case, each thread will have additional overhead to lock/unlock the element, or to communicate its updated values (or even transfer the entire cache line from a different thread!), to update its values. This increases the execution time crazily!
+
+We avoid such a scenario in the outer loop, since the contiguous elements in the array are allocated to a single thread. The difference here is that we are parallelizing the array in contiguous blocks of 1024 elements. Thus, all threads get almost exclusive access to the cache lines for the respective elements they are updating. This boosts up the performance, as there are no extra overheads, and we are utilizing the parallelism completely.
+
+Does parallelizing both loops make a difference? Why or why not?
+----------------------------------------------------------------
+No, the outer loop will parallelize the program in contiguous blocks of 1024. The inner loop will parallelize it again, breaking it down to smaller blocks of contiguous memory locations. This turns out to be worse than parallelizing just the inner loop. (We avoided a lot of cache line overhead earlier, since the outer loop was still serial.) This is the exact situation we want to avoid. 
 
 V2 - 1
 ======
@@ -42,12 +66,24 @@ Initialization took 0.011237 seconds
 Simulation took 14.055529 seconds
 Init+Simulation took 14.066766 seconds
 
+Parallelizing the memory initializations improve the performance slightly.
+
+Why does parallelizing memory initializations matter?
+-----------------------------------------------------
+Well, it is being done only once! But still, it is an nxn grid, which can be parallelized easily. We do see a slight increase in the performance, so, why not?
+
 V2 - 2
 ======
 running ./lake with (1024 x 1024) grid, until 2.000000, with 16 threads
 Initialization took 0.011271 seconds
 Simulation took 14.034368 seconds
 Init+Simulation took 14.045639 seconds
+
+Parallelizing the memcpy only increases the performance slightly! Maybe in milliseconds.
+
+By default, the program would go through each memcpy serially. I tried to split the memcpy into parallel sections, but we're still not utilizing the full potential of the hardware (we are using only 2 threads instead of 16). If there were 16 memcpy commands, I think we would have seen a better spike in performance. 
+
+Further, I think C does some level of parallelism for memcpy by default. That explains why the improvement we see is so small! 
 
 V3
 ==
@@ -56,3 +92,23 @@ Initialization took 0.011489 seconds
 Simulation took 16.900811 seconds
 Init+Simulation took 16.912300 seconds
 
+Changing the scheduling to dynamic increased the execution time in our case. 
+
+Does the scheduling type matter? Why or why not?
+------------------------------------------------
+Not in our case. I'm guessing it is because we have the exact same code for all threads. With similar code, all threads are going to finish almost at the same time. In this case, the overhead for adding dynamic scheduling outweighs the advantages we get out of it. 
+
+If our code had a lot of if blocks, or was considerably different, then some threads would finish before others do. And those threads would be idle till the later threads finish. (Static scheduling). In these cases, dynamic scheduling would help improve the performance. 
+
+DISCUSSION
+==========
+
+This program is particularly easy to parallelize. Why?
+------------------------------------------------------
+In the program, we work mostly on nxn grids, and using finite differencing. The whole grid can be updated parallelly, as it only depends on the grid values at previous timestamps. 
+
+Further, we are mostly using for loops for all updates, which are friendly to work on with omp.
+
+(Optional) Can you think of other optimizations either in the code or the OpenMP directives that could further speed up the program? Include a thorough discussion of optimizations. If you'd like to implement these optimizations, please do so in separate files from the base code. You may also submit timings from demonstration runs showing the speedup.
+-------------------------------------------------------------------------------------------------------
+Instead of splitting the memcpy into parallel sections (which utilize only 2 threads out of 16), we could improve it further by doing it using for loops, and parallelizing it. We should be able to utilize all 16 threads in that case. 
