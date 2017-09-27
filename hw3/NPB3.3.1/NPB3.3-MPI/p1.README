@@ -1,0 +1,21 @@
+// zsthampi - Zubin Thampi
+
+Describe the communication pattern. Where is most of the communication happening (number of calls)?
+---------------------------------------------------------------------------------------------------
+The communication pattern, at first sight, is linear. (From the visualization) 
+ie. Each rank communicates to other ranks close to it.
+
+Examining further, each rank communicates to (rank-1), (rank+1), (rank-8), and (rank+8). 
+The communication pattern also repeats in groups of 8. 
+
+Generally, there are 4 messages sent by each rank. Except at the boundary of the groups, where some ranks send only 3 messages. 
+(Rank 0 and Rank 59 publish only 2 messages, since (rank-1) and (rank+1) processes are not valid for them respectively.)
+
+The number of calls is almost the same (~ 15200), since all the dots are marked by bright yellow. 
+
+What symmetries do you expect to see for Send counts? Are these symmetries observed? Why or Why not?
+----------------------------------------------------------------------------------------------------
+Well, it depends on the algorithm and the program. 
+If a program uses a Broadcast message, then the Send counts should be the same to all the other ranks. 
+
+Otherwise, it just depends on the number of MPI_Send/MPI_Isend calls you have in your program.
