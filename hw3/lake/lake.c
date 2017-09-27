@@ -195,8 +195,17 @@ void run_sim(double *u, double *u0, double *u1, double *pebbles, int n, double h
   uo = (double*)malloc(sizeof(double) * n * n);
 
   /* put the inital configurations into the calculation arrays */
-  memcpy(uo, u0, sizeof(double) * n * n);
-  memcpy(uc, u1, sizeof(double) * n * n);
+  #pragma omp parallel sections
+  {
+    #pragma omp section
+    {
+      memcpy(uo, u0, sizeof(double) * n * n);
+    }
+    #pragma omp section
+    {
+      memcpy(uc, u1, sizeof(double) * n * n);
+    }
+  }
 
   /* start at t=0.0 */
   t = 0.;
