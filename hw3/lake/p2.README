@@ -49,4 +49,10 @@ Initialization took 0.011271 seconds
 Simulation took 14.034368 seconds
 Init+Simulation took 14.045639 seconds
 
+V3
+==
+running ./lake with (1024 x 1024) grid, until 2.000000, with 16 threads
+Initialization took 0.011489 seconds
+Simulation took 16.900811 seconds
+Init+Simulation took 16.912300 seconds
 

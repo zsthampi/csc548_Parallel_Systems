@@ -257,7 +257,7 @@ void update_sim_values(double *un, double *uo, double *uc, double *pebbles, int 
 
   /* run a central finite differencing scheme to solve
    * the wave equation in 2D */
-#pragma omp parallel for firstprivate(j,idx) num_threads(nthreads) 
+#pragma omp parallel for firstprivate(j,idx) num_threads(nthreads) schedule(dynamic)
   for( i = 0; i < n; i++)
   {
 // #pragma omp parallel for firstprivate(idx) num_threads(nthreads)
@@ -365,7 +365,7 @@ void init(double *u, double *pebbles, int n)
 {
   int i, j, idx;
 
-  #pragma omp parallel for firstprivate(j,idx)
+  #pragma omp parallel for firstprivate(j,idx) schedule(dynamic)
   for(i = 0; i < n ; i++)
   {
     for(j = 0; j < n ; j++)
