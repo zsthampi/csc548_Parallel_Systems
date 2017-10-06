@@ -8,6 +8,7 @@ hw2/sync
 hw2/lake/lake
 hw2/lake/*.dat
 hw2/lake/*.png
+hw2/sync*
 hw3/NPB3.3.1/NPB3.3-MPI/LU/pmpi.o
 hw3/lake/lake
 hw3/lake/lake_f.dat
