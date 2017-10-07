@@ -19,3 +19,7 @@ Well, it depends on the algorithm and the program.
 If a program uses a Broadcast message, then the Send counts should be the same to all the other ranks. 
 
 Otherwise, it just depends on the number of MPI_Send/MPI_Isend calls you have in your program.
+
+In the LU program, we expect each process to communicate only with maximum of 4 other processes. 
+We see the same pattern in the heatmap we generated. 
+We also expect a repetitive pattern in the communication, which we see in the heatmap.

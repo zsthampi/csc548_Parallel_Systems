@@ -224,6 +224,7 @@ void run_sim(double *u, double *u0, double *u1, double *pebbles, int n, double h
   int count = 0;
   int mod = 0;
   /* loop until time >= end_time */
+#pragma acc data copy(un[:n*n],uc[:n*n],uo[:n*n],pebbles[:n*n])
   while(1)
   {
     mod = count % 3;
@@ -257,7 +258,8 @@ void update_sim_values(double *un, double *uo, double *uc, double *pebbles, int 
 
   /* run a central finite differencing scheme to solve
    * the wave equation in 2D */
-#pragma omp parallel for firstprivate(j,idx) num_threads(nthreads) schedule(dynamic)
+#pragma omp parallel for firstprivate(j,idx) num_threads(nthreads)
+#pragma acc kernels loop
   for( i = 0; i < n; i++)
   {
 // #pragma omp parallel for firstprivate(idx) num_threads(nthreads)
@@ -365,7 +367,7 @@ void init(double *u, double *pebbles, int n)
 {
   int i, j, idx;
 
-  #pragma omp parallel for firstprivate(j,idx) schedule(dynamic)
+  #pragma omp parallel for firstprivate(j,idx)
   for(i = 0; i < n ; i++)
   {
     for(j = 0; j < n ; j++)

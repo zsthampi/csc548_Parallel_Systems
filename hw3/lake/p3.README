@@ -1,0 +1,115 @@
+// zsthampi - Zubin Thampi
+
+SERIAL
+======
+running ./lake with (1024 x 1024) grid, until 2.000000, with 1 threads
+Initialization took 0.032884 seconds
+Simulation took 253.225213 seconds
+Init+Simulation took 253.258097 seconds
+
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.011680 seconds
+Simulation took 54.328542 seconds
+Init+Simulation took 54.340222 seconds
+
+NAIVE ACC
+=========
+running ./lake with (1024 x 1024) grid, until 2.000000, with 1 threads
+Initialization took 0.041745 seconds
+Simulation took 215.909515 seconds
+Init+Simulation took 215.951260 seconds
+
+ACC with Single data copy
+=========================
+running ./lake with (1024 x 1024) grid, until 2.000000, with 1 threads
+Initialization took 0.028237 seconds
+Simulation took 4.650972 seconds
+Init+Simulation took 4.679209 seconds
+
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.011379 seconds
+Simulation took 1.896873 seconds
+Init+Simulation took 1.908252 seconds
+
+ACC kernel loop
+===============
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.007941 seconds
+Simulation took 1.500959 seconds
+Init+Simulation took 1.508900 seconds
+
+ACC kernel loop with private
+============================
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.008476 seconds
+Simulation took 1.528365 seconds
+Init+Simulation took 1.536841 seconds
+
+ACC with parallel init 
+======================
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.625532 seconds
+Simulation took 0.920031 seconds
+Init+Simulation took 1.545563 seconds
+
+ACC with gang/vector
+====================
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.008230 seconds
+Simulation took 7.019554 seconds
+Init+Simulation took 7.027784 seconds
+
+
+==========
+DISCUSSION
+==========
+
+I tried out the following optimizations 
+1. NAIVE ACC - Which is part of the problem statement 
+2. ACC with Single data copy - Updated the acc part, to copy data between Host and Device only once. This improved the performance significantly
+3. ACC kernel loop - At the finite differencing loop, use "acc kernels loop" instead of "acc kernels". This improve the performance significantly too! This is mostly because acc optimizes the code for for loops internally
+4. ACC kernel loop with private - I tried to make the variables inside the kernel private, but it did not impact the performance much 
+5. ACC with parallel init - I tried to parallellize the init sections using openacc too. But it did not improve the performance much. Since we are only performing this once, the overhead of copying data between the Device and the Host, outweighs the advantages we get out of it. 
+6. ACC with gang/vector - I tried to run acc with varied values of block and thread sizes. But it did not improve the performance. Unless you're sure about the problem size, I guess its better to leave it to acc to select an optimized value for block sizes and thread sizes
+
+Why is the naive implementation slower?
+=======================================
+The naive implementation copies the arrays between the Device and Host on each iteration, which contributes to a major part of the execution time
+
+What could be done to work around this slowdown?
+================================================
+Update the code to copy the arrays only once. Before the start of kernel iterations
+
+Can the loops be rearranged to improve memory access on the device?
+===================================================================
+Parallelizing the outer loop works fine in our algorithm. I could not find an alternate way to arrange the loops for better performance. 
+
+Is there any OpenACC setup code that does not involve any simulation variables that could be moved out of run_sim?
+==========================================================================================================
+I couldn't find any. All the openacc directives I'm using occur at the loops, and cannot be moved outside run_sim
+
+Can we manipulate the block/thread scheduling done by OpenACC to our advantage?
+===============================================================================
+I tried various values for gang and vector, but it did not give any improvement in performance. 
+Unless we know the exact size of the problem, I guess it is better to let openacc select an optimized value
+
+The effect of the problem size (smaller vs. larger grids, short vs. longer simulation times)
+=============================================================================================
+For really small grid sizes, the serial code works better, since the overhead of copying the arrays over to GPU outweigh the advantages in performance. 
+
+The openacc code works better for larger grid sizes. I noticed the speedup increases with increase in the problem size and simulation times. The table below gives the approximate speedup I observed in my experiments.
+
+Simulation time 		1.0								4.0
+Grid Size
+
+	64				0.59/0.02	(0.03x)					0.62/0.10   (0.16x)
+	128				0.66/0.20	(0.30x)					0.63/0.80   (1.2x)
+	512				0.85/13.62	(16x)					1.52/54.53  (35x)
+	1024			2.21/109.40	(49x)					6.38/431.64 (67x)
+
+Where your biggest optimization came from (eg thread scheduling? memory management? screaming at the screen louder?)
+====================================================================================================
+The biggest optimizations were from avoiding excessive memory copy. 
+I did not notice much improvement from thread scheduling. 
+Using acc kernels loop, also provided significant improvement.
+
