@@ -1,5 +1,26 @@
 // zsthampi - Zubin Thampi
 
+
+DISCLOSURE
+=========================================================================================================
+
+I DID A LOT OF THIS ASSIGNMENT BEFORE THE FORUM POST REGARDING CAPTURING THE NODE NAMES ON WHICH THE CODE WAS RUN. HOWEVER, I CAPTURED THE TIMINGS OF MY BEST PERFORMING CODE, WHICH IS BELOW. 
+
+c76 - 0.549313 (~ 98x)
+----------------------
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.008789 seconds
+Simulation took 0.540524 seconds
+Init+Simulation took 0.549313 seconds
+
+c14 - 1.001862 (~ 54x)
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.008838 seconds
+Simulation took 0.993024 seconds
+Init+Simulation took 1.001862 seconds
+
+=========================================================================================================
+
 SERIAL
 ======
 running ./lake with (1024 x 1024) grid, until 2.000000, with 1 threads
@@ -59,6 +80,13 @@ Initialization took 0.008230 seconds
 Simulation took 7.019554 seconds
 Init+Simulation took 7.027784 seconds
 
+ACC with init outside run_sim loop
+==================================
+running ./lake with (512 x 512) grid, until 4.000000, with 1 threads
+Initialization took 0.008789 seconds
+Simulation took 0.540524 seconds
+Init+Simulation took 0.549313 seconds
+
 
 ==========
 DISCUSSION
@@ -71,6 +99,7 @@ I tried out the following optimizations
 4. ACC kernel loop with private - I tried to make the variables inside the kernel private, but it did not impact the performance much 
 5. ACC with parallel init - I tried to parallellize the init sections using openacc too. But it did not improve the performance much. Since we are only performing this once, the overhead of copying data between the Device and the Host, outweighs the advantages we get out of it. 
 6. ACC with gang/vector - I tried to run acc with varied values of block and thread sizes. But it did not improve the performance. Unless you're sure about the problem size, I guess its better to leave it to acc to select an optimized value for block sizes and thread sizes
+7. ACC with init outside run_sim loop - I tried to move the acc_init() function outside of the rum_sim function. This gave me considerable improvement in the run times. 
 
 Why is the naive implementation slower?
 =======================================
@@ -86,7 +115,12 @@ Parallelizing the outer loop works fine in our algorithm. I could not find an al
 
 Is there any OpenACC setup code that does not involve any simulation variables that could be moved out of run_sim?
 ==========================================================================================================
-I couldn't find any. All the openacc directives I'm using occur at the loops, and cannot be moved outside run_sim
+All the openacc directives I'm using occur at the loops, and cannot be moved outside run_sim
+However, I noticed we could add the acc_init() function outside of the rum_sim function, and it improves the performance considerably. 
+
+I'm not sure why this happens, because ideally, acc should do the same stuff in acc_init() only once. (Whether it is called directly, or run as part of the first acc directive)
+My best guess is that acc_init() actually finds out the GPU node its running on, and optimizes the whole program for the particular node. 
+If it is called as part of the first directive, acc does not check the present node, and runs initializations for all the GPU architectures that it supports. 
 
 Can we manipulate the block/thread scheduling done by OpenACC to our advantage?
 ===============================================================================
