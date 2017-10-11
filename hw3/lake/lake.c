@@ -68,6 +68,10 @@ int main(int argc, char *argv[])
     return 0;
   }
 
+  #ifdef _OPENACC
+    acc_init();
+  #endif
+
   /* get the program directory */
   set_wrkdir(argv[0]);
   /* main simulation arrays */
@@ -195,6 +199,7 @@ void run_sim(double *u, double *u0, double *u1, double *pebbles, int n, double h
   un = (double*)malloc(sizeof(double) * n * n);
   uc = (double*)malloc(sizeof(double) * n * n);
   uo = (double*)malloc(sizeof(double) * n * n);
+  
 
   /* put the inital configurations into the calculation arrays */
   #pragma omp parallel sections
