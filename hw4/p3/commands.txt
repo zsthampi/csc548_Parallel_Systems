@@ -1,0 +1,17 @@
+srun -N4 -popteron --pty /bin/bash
+source hadoop-setup.sh &> setup_output.txt
+hdfs dfs -put input /user/zsthampi/input
+
+hadoop/sbin/stop-dfs.sh
+
+javac TFIDF.java
+jar cf TFIDF.jar TFIDF*.class
+hadoop jar TFIDF.jar TFIDF /user/zsthampi/input &> hadoop_output.txt
+
+rm -rf output
+hdfs dfs -get /user/MY-UNITY-ID/output .
+
+hdfs dfs -ls /user/zsthampi/output/
+hdfs dfs -cat /user/zsthampi/output/WordCount/part-r-00000
+hdfs dfs -cat /user/zsthampi/output/DocSize/part-r-00000
+hdfs dfs -cat /user/zsthampi/output/TFIDF/part-r-00000

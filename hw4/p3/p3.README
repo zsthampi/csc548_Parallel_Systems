@@ -1,0 +1,51 @@
+// zsthampi - Zubin S Thampi
+
+PREREQ : 
+	- Setup Hadoop file system 
+	- hdfs dfs -put input /user/zsthampi/input (Copy input to HDFS)
+
+COMPILE : 
+	- javac TFIDF.java
+	- jar cf TFIDF.jar TFIDF*.class
+
+RUN : 
+	- hadoop jar TFIDF.jar TFIDF /user/zsthampi/input &> hadoop_output.txt
+
+I noticed the following stuff in the homework
+1. All data in HDFS and MapReduce are represented as (key, value) pairs 
+2. When you are reading input from a file, it transforms it to the form (<id>, <String>)
+The <String> is delimited by a tab character ("\t")
+3. While mapping, we convert (key, value) directly to another (key, value) pair
+4. During reduce, we work on (key, <Iterable> value). ie. All the values belonging to the same key are clubbed together. 
+
+I detail the steps for each section below 
+
+Word Count 
+==========
+Input : Space separated words in different files 
+
+1. Read each input file into a String tokenizer 
+2. For each word, write (word@document, 1) pair into the output 
+We will use the integer value later to ease summation of elements 
+3. During reduction, we iterate over (word@document, <Iterable> 1), the sum of which gives us the count of the word in a document
+
+Document Size 
+=============
+Input : Output from Word Count step 
+
+1. Map step is simple String manipulation to convert (word@document, wordCount) to (document, word=wordCount)
+2. I am using tab ("\t") delimiter to split the string we get from the file 
+3. In Reduce step, I iterate over the values twice 
+	- First, to get the sum of all the Word Count per document (which is the Doc Size)
+	- Second, to use the Doc Size and create the new mapped values 
+4. I'm using an Array List to cache the elements in the Iterator, so I can iterate over it again 
+
+TFIDF
+=====
+Input : Output from Document Size step 
+
+1. Map step is simple String manipulation again, using tab character as delimiter 
+2. In Reduce step, similar to previous step, I iterate over the values twice 
+	- First, I calculate the number of documents the word appears in 
+	- Second, I used the above value, and the formula for TFIDF, to map the new values
+3. I'm again using an Array List to cache the elements in the Iterator, so I can iterate over it again 
