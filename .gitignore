@@ -14,3 +14,7 @@ hw3/lake/lake
 hw3/lake/lake_f.dat
 hw3/lake/lake_i.dat
 hw3/lake/lake.log
+*.out
+*.class
+*.jar
+*output.txt
