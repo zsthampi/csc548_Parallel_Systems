@@ -18,3 +18,5 @@ hw3/lake/lake.log
 *.class
 *.jar
 *output.txt
+hw5/hadoop/
+hw4/hadoop/
