@@ -1,0 +1,27 @@
+// zsthampi -  Zubin S Thampi
+
+
+Compile : 	
+javac TFIDF.java
+jar cf TFIDF.jar TFIDF*.class
+
+Run : 
+spark-submit --class TFIDF TFIDF.jar /user/zsthampi/input/ &> spark_output.txt
+grep -v '^2017\|^(\|^-' spark_output.txt > output.txt
+
+
+tfRDD
+=====
+tfRDD mapping is straight forward. Its a 1 to 1 mapping. 
+In reduce step, I split up the string to get the number, and added them up, and converted it back to a string 
+
+idfRDD
+======
+The first mapping is a straight forward string operation, and is a 1 to 1 mapping. 
+In the reduce step, I added up the numbers in the numerator, and added comma separated documents in the denominator 
+The last mapping is a flat mapping, where I split up the documents in the denominator 
+
+TFIDF
+=====
+Once the above steps are done, there are only computations left for the TFIDF calculation. 
+In the final step, there is a string manipulation to convert word@document to document@word

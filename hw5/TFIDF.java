@@ -1,3 +1,5 @@
+// zsthampi -  Zubin S Thampi
+
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -22,7 +24,7 @@ public class TFIDF {
             System.err.println("Usage: TFIDF <input dir>");
             System.exit(1);
         }
-		
+
 		// Create a Java Spark Context
 		SparkConf conf = new SparkConf().setAppName("TFIDF");
 		JavaSparkContext sc = new JavaSparkContext(conf);
@@ -92,14 +94,18 @@ public class TFIDF {
 		 * Map:    ( (word@document) , (1/docSize) )
 		 * Reduce: ( (word@document) , (wordCount/docSize) )
 		 */
-		JavaPairRDD<String,String> tfRDD = wordsRDD./**MAP**/(
-			
-			/************ YOUR CODE HERE ************/
-			
-		)./**REDUCE**/(
-			
-			/************ YOUR CODE HERE ************/
-			
+		JavaPairRDD<String,String> tfRDD = wordsRDD.mapToPair(
+			new PairFunction<Tuple2<String,Integer>,String,String>() {
+				public Tuple2<String,String> call(Tuple2<String,Integer> x) {
+					return new Tuple2(x._1, "1/".concat(Integer.toString(x._2)));
+				}
+			}
+		).reduceByKey(
+			new Function2<String,String,String>() {
+				public String call(String s1, String s2) {
+					return Integer.toString(Integer.parseInt(s1.split("/")[0].trim()) + Integer.parseInt(s2.split("/")[0].trim())).concat("/").concat(s1.split("/")[1].trim()); 
+				}
+			}
 		);
 		
 		//Print tfRDD contents
@@ -121,18 +127,29 @@ public class TFIDF {
 		 * Reduce: ( word , (numDocsWithWord/document1,document2...) )
 		 * Map:    ( (word@document) , (numDocs/numDocsWithWord) )
 		 */
-		JavaPairRDD<String,String> idfRDD = tfRDD./**MAP**/(
-			
-			/************ YOUR CODE HERE ************/
-			
-		)./**REDUCE**/(
-			
-			/************ YOUR CODE HERE ************/
-			
-		)./**MAP**/(
-			
-			/************ YOUR CODE HERE ************/
-			
+		JavaPairRDD<String,String> idfRDD = tfRDD.mapToPair(
+			new PairFunction<Tuple2<String,String>,String,String>() {
+				public Tuple2<String,String> call(Tuple2<String,String> x) {
+					return new Tuple2(x._1.split("@")[0].trim(), "1/".concat(x._1.split("@")[1].trim()));
+				}
+			}
+		).reduceByKey(
+			new Function2<String,String,String>() {
+				public String call(String s1, String s2) {
+					return Integer.toString(Integer.parseInt(s1.split("/")[0].trim()) + Integer.parseInt(s2.split("/")[0].trim()))
+					.concat("/").concat(s1.split("/")[1].trim()).concat(",").concat(s2.split("/")[1].trim());
+				}
+			}
+		).flatMapToPair(
+			new PairFlatMapFunction<Tuple2<String,String>,String,String>() {
+				public Iterable<Tuple2<String,String>> call(Tuple2<String,String> x) {
+					ArrayList ret = new ArrayList();
+					for(String document:x._2.split("/")[1].trim().split(",")) {
+						ret.add(new Tuple2(x._1.concat("@").concat(document), Long.toString(numDocs).concat("/").concat(x._2.split("/")[0].trim())));	
+					}
+					return ret;
+				}
+			}
 		);
 		
 		//Print idfRDD contents
@@ -145,8 +162,8 @@ public class TFIDF {
 			System.out.println("--------------------------------");
 		}
 	
-		/*
-		 * TF * IDF Job
+		
+		 /* TF * IDF Job
 		 * Calculates final TFIDF value from tfRDD and idfRDD
 		 *
 		 * Input:  ( (word@document) , (wordCount/docSize) )          [from tfRDD]
@@ -163,6 +180,7 @@ public class TFIDF {
 		 * where IDF   = ln(numDocs/numDocsWithWord)
 		 * where TFIDF = TF * IDF
 		 */
+
 		JavaPairRDD<String,Double> tfFinalRDD = tfRDD.mapToPair(
 			new PairFunction<Tuple2<String,String>,String,Double>() {
 				public Tuple2<String,Double> call(Tuple2<String,String> x) {
@@ -174,20 +192,26 @@ public class TFIDF {
 			}
 		);
 		
-		JavaPairRDD<String,Double> idfFinalRDD = idfRDD./**MAP**/(
-			
-			/************ YOUR CODE HERE ************/
-			
+		JavaPairRDD<String,Double> idfFinalRDD = idfRDD.mapToPair(
+			new PairFunction<Tuple2<String,String>,String,Double>() {
+				public Tuple2<String,Double> call(Tuple2<String,String> x) {
+					return new Tuple2(x._1, Math.log(Double.parseDouble(x._2.split("/")[0])/Double.parseDouble(x._2.split("/")[1])));
+				}
+			}
 		);
 		
-		JavaPairRDD<String,Double> tfidfRDD = tfFinalRDD.union(idfFinalRDD)./**REDUCE**/(
-			
-			/************ YOUR CODE HERE ************/
-			
-		)./**MAP**/(
-			
-			/************ YOUR CODE HERE ************/
-			
+		JavaPairRDD<String,Double> tfidfRDD = tfFinalRDD.union(idfFinalRDD).reduceByKey(
+			new Function2<Double,Double,Double>() {
+				public Double call(Double d1, Double d2) {
+					return d1*d2;
+				}
+			}
+		).mapToPair(
+			new PairFunction<Tuple2<String,Double>,String,Double>() {
+				public Tuple2<String,Double> call(Tuple2<String,Double> x) {
+					return new Tuple2(x._1.split("@")[1].trim().concat("@").concat(x._1.split("@")[0].trim()), x._2);
+				}
+			}
 		);
 		
 		//Print tfidfRDD contents in sorted order
