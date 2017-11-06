@@ -1,1 +1,0 @@
-/usr/local/hadoop/README.txt

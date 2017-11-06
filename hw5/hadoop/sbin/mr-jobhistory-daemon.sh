@@ -1,1 +1,0 @@
-/usr/local/hadoop/sbin/mr-jobhistory-daemon.sh

@@ -1,1 +1,0 @@
-/usr/local/hadoop/sbin/hadoop-daemons.sh

@@ -1,1 +1,0 @@
-/usr/local/hadoop/libexec/httpfs-config.sh
