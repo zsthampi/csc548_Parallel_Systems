@@ -141,10 +141,6 @@ int main(int argc , char *argv[]){
 			TF_idx += count;
 		}
 
-		for (i = 0; i < TF_idx; i++) {
-			printf("TFIDF Rank : %d : %d : %s : %s : %d : %d : %d : %d \n", rank, i, TFIDF[i].word, TFIDF[i].document, TFIDF[i].wordCount, TFIDF[i].docSize, TFIDF[i].numDocs, TFIDF[i].numDocsWithWord);
-		}
-
 		// Create a buffer for storing unique words from each rank 
 		u_w unique_words_buffer[MAX_WORDS_IN_CORPUS];
 
@@ -173,10 +169,6 @@ int main(int argc , char *argv[]){
 					uw_idx++;
 				}
 			}
-		}
-		
-		for (i = 0; i < uw_idx; i++) {
-			printf("UW Rank : %d : %d : %s : %d : %d \n", rank, i, unique_words[i].word, unique_words[i].numDocsWithWord, unique_words[i].currDoc);
 		}
 
 	} else {
@@ -241,10 +233,6 @@ int main(int argc , char *argv[]){
 				}
 			}
 			fclose(fp);
-		}
-
-		for (i = 0; i < TF_idx; i++) {
-			printf("TFIDF Rank : %d : %d : %s : %s : %d \n", rank, i, TFIDF[i].word, TFIDF[i].document, TFIDF[i].wordCount);
 		}
 		
 		// MPI_Reduce(&TF_idx, NULL, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
