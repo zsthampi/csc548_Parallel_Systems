@@ -1,2 +1,2 @@
 all:
-        mpicc -fopenmp -openmp -o TFIDF_extra TFIDF_extra.c -lm -O3
+	mpicc -fopenmp -openmp -o TFIDF_extra TFIDF_extra.c -lm -O3
