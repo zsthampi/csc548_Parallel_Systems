@@ -1,5 +1,2 @@
-SHELL:=/bin/bash
-
 all:
-	module load pgi64; \
-	pgcc -o TFIDF_extra TFIDF_extra.c -I./ -mp -fast -Minfo=mp -Minline -Msafeptr -lm
+    mpicc -fopenmp -openmp -o TFIDF_extra TFIDF_extra.c -lm -O3

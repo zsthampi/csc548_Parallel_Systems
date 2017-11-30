@@ -1,5 +1,13 @@
 // zsthampi -  Zubin S Thampi
 
+Compile TFIDF_extra 
+-------------------
+make -f Makefile_extra
+
+Run TFIDF_extra 
+---------------
+mpirun -np 4 ./TFIDF_extra
+
 Describe your implementation step-by-step. This should include descriptions of what MPI messages get sent/received by which rank, and in what order.
 ===========================================================================================================
 1. The first thing I did is to create a custom datatype for the 2 structures used in the algorithm. I used MPI_Type_create_struct method. I added additional comments in the code. 
@@ -15,7 +23,6 @@ rank 3 works on files 3,6,9 ...
 5. Each rank communicates the Unique Words structure values to rank 0. Rank 0 collects, and combines them. This step requires some additional logic, since some of the values may be common across different processes. 
 6. Once rank 0 has all the required data, it computes the TFIDF values. This step is ditto similar to the serial code.
 
-
 Describe how you could add more parallelism to your code so that all of the processors on each MPI node are used instead of only one processor per MPI node.
 ===========================================================================================================
 Each process iterates through the files in a for loop. 
@@ -23,7 +30,18 @@ I can parallellize the for loop using OpenMP, to utilize the processors per MPI 
 
 Implement the additional parallelism you just described. Submit this as TFIDF_extra.c. Compare this implementation to your MPI implementation.
 ===========================================================================================================
+In the MPI implementation, each MPI process (except for rank 0), divides up the files. 
+However, if there are multiple files per process, they are processed serially. 
 
+Adding OMP code allows us to parallelize this section. 
+I could process up to 16 files (threads) in parallel, thereby speeding up the computation. 
 
 Compare your MPI implementation to the previous MapReduce and Spark implementations of TFIDF.
 ===========================================================================================================
+MPI implementation uses native code, and hence requires a lot more effort to code. 
+We additionally had to specificy the limits of the arrays that we use manually. 
+
+MapReduce and Spark remove these limitations, and can scale better with increase in the number of files, or the number of words per file. 
+
+MPI communication should perform faster, since it is elementary C code. 
+MapReduce and Spark adds a lot more complexity (which comes with the additional features that it supports), which in turns takes longer to run. 

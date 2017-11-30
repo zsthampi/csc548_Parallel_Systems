@@ -7,6 +7,7 @@
 #include <math.h>
 #include "mpi.h"
 #include <stddef.h>
+#include <omp.h>
 
 #define MAX_WORDS_IN_CORPUS 32
 #define MAX_FILEPATH_LENGTH 16
@@ -141,10 +142,6 @@ int main(int argc , char *argv[]){
 			TF_idx += count;
 		}
 
-		// for (i = 0; i < TF_idx; i++) {
-		// 	printf("TFIDF Rank : %d : %d : %s : %s : %d : %d : %d : %d \n", rank, i, TFIDF[i].word, TFIDF[i].document, TFIDF[i].wordCount, TFIDF[i].docSize, TFIDF[i].numDocs, TFIDF[i].numDocsWithWord);
-		// }
-
 		// Create a buffer for storing unique words from each rank 
 		u_w unique_words_buffer[MAX_WORDS_IN_CORPUS];
 
@@ -174,16 +171,19 @@ int main(int argc , char *argv[]){
 				}
 			}
 		}
-		
-		// for (i = 0; i < uw_idx; i++) {
-		// 	printf("UW Rank : %d : %d : %s : %d : %d \n", rank, i, unique_words[i].word, unique_words[i].numDocsWithWord, unique_words[i].currDoc);
-		// }
 
 	} else {
 		// Loop through each document and gather TFIDF variables for each word
+		#pragma omp parallel for shared(numDocs,TFIDF,TF_idx,unique_words,uw_idx) private(document,filename,docSize,contains)
 		for(i=rank; i<=numDocs; i+=(nproc-1)){
 			sprintf(document, "doc%d", i);
 			sprintf(filename,"input/%s",document);
+
+			// Code to check the thread numbers 
+			// int np = omp_get_num_threads();
+			// int iam = omp_get_thread_num();
+			// printf("%d / %d : %s \n",np,iam,filename);
+
 			FILE* fp = fopen(filename, "r");
 			if(fp == NULL){
 				printf("Error Opening File: %s\n", filename);
@@ -211,12 +211,13 @@ int main(int argc , char *argv[]){
 				
 				//If TFIDF array does not contain it, make a new one with wordCount=1
 				if(!contains) {
-					strcpy(TFIDF[TF_idx].word, word);
-					strcpy(TFIDF[TF_idx].document, document);
-					TFIDF[TF_idx].wordCount = 1;
-					TFIDF[TF_idx].docSize = docSize;
-					TFIDF[TF_idx].numDocs = numDocs;
+					int tmp = TF_idx;
 					TF_idx++;
+					strcpy(TFIDF[tmp].word, word);
+					strcpy(TFIDF[tmp].document, document);
+					TFIDF[tmp].wordCount = 1;
+					TFIDF[tmp].docSize = docSize;
+					TFIDF[tmp].numDocs = numDocs;
 				}
 				
 				contains = 0;
@@ -234,18 +235,15 @@ int main(int argc , char *argv[]){
 				
 				// If unique_words array does not contain it, make a new one with numDocsWithWord=1 
 				if(!contains) {
-					strcpy(unique_words[uw_idx].word, word);
-					unique_words[uw_idx].numDocsWithWord = 1;
-					unique_words[uw_idx].currDoc = i;
+					int tmp = uw_idx;
 					uw_idx++;
+					strcpy(unique_words[tmp].word, word);
+					unique_words[tmp].numDocsWithWord = 1;
+					unique_words[tmp].currDoc = i;
 				}
 			}
 			fclose(fp);
 		}
-
-		// for (i = 0; i < TF_idx; i++) {
-		// 	printf("TFIDF Rank : %d : %d : %s : %s : %d \n", rank, i, TFIDF[i].word, TFIDF[i].document, TFIDF[i].wordCount);
-		// }
 		
 		// MPI_Reduce(&TF_idx, NULL, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 		// MPI_Barrier(MPI_COMM_WORLD);
